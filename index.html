@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>JVZZ CONTROL</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:#fff;background:#000;background-size:cover;background-position:center;background-attachment:fixed}
+header{text-align:center;padding:28px 16px 12px}header h1{color:#d8ff50;font-size:32px;letter-spacing:2px;margin:0 0 8px}header p{color:#ddd;margin:0}
+main{width:min(100% - 28px,600px);margin:auto;padding-bottom:24px}.panel{background:rgba(24,24,24,.94);border:1px solid #414141;border-radius:16px;padding:20px;margin:16px 0}.panel h2{color:#d8ff50;margin:0 0 14px;font-size:20px}.money{color:#d8ff50;font-size:32px;font-weight:bold;margin:8px 0}.small{color:#ccc;font-size:14px}
+label{display:block;margin:12px 0 6px}input{width:100%;padding:12px;margin:4px 0 8px;border:1px solid #555;border-radius:9px;background:#292929;color:#fff;font-size:16px}input[type=file]{font-size:14px}
+button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:9px;background:#d8ff50;color:#111;font-size:15px;font-weight:bold}button.secondary{background:#343434;color:#fff;border:1px solid #555}.history{padding:11px 0;border-bottom:1px solid #414141;overflow-wrap:anywhere}.positive{color:#8cff9b}.negative{color:#ff8585}footer{text-align:center;padding:10px 16px 24px;color:#bbb;font-size:12px}
+</style>
+</head>
+<body>
+<header><h1>JVZZ CONTROL</h1><p>Mi negocio. Mis cuentas. Mi futuro. 💸</p></header>
+<main>
+<section class="panel"><h2>💰 Mi dinero</h2><p class="small">Saldo disponible</p><div class="money" id="saldo">6,10 €</div><p>Objetivo: <strong id="objetivoTexto">50,00 €</strong></p><label for="objetivoInput">Cambiar objetivo (€)</label><input id="objetivoInput" type="number" min="0" step="0.01" placeholder="Ej. 50"><button id="guardarObjetivo">Guardar objetivo</button></section>
+<section class="panel"><h2>📊 Registrar movimiento</h2><label for="concepto">Concepto</label><input id="concepto" maxlength="100" placeholder="Ej. Venta de videojuego"><label for="cantidad">Cantidad (€)</label><input id="cantidad" type="number" min="0.01" step="0.01" placeholder="Ej. 20"><button id="ventaBtn">＋ Registrar venta</button><button id="compraBtn" class="secondary">− Registrar compra</button><p class="small">Registra solo movimientos reales. El balance suma ventas y resta compras.</p><p>Balance de movimientos: <strong id="beneficio">0,00 €</strong></p></section>
+<section class="panel"><h2>🧾 Historial</h2><div id="historial" class="small">Todavía no hay movimientos.</div><button id="exportarBtn" class="secondary">Exportar copia de seguridad</button><label for="importarInput">Restaurar copia de seguridad</label><input id="importarInput" type="file" accept="application/json"><button id="borrarBtn" class="secondary">Reiniciar datos</button></section>
+<section class="panel"><h2>🖼️ Foto de fondo</h2><p class="small">Selecciona una imagen de tu galería.</p><label for="fotoInput">Elegir foto</label><input id="fotoInput" type="file" accept="image/*"><button id="aplicarFoto">Aplicar foto</button><button id="quitarFoto" class="secondary">Volver al fondo negro</button></section>
+</main><footer>JVZZ CONTROL · Tu panel personal</footer>
+<script>
+const KEY="jvzzControlDatos", PHOTO="jvzzControlFoto";
+const initial={saldo:6.10,objetivo:50,beneficio:0,movimientos:[]};
+let datos;
+try{datos=JSON.parse(localStorage.getItem(KEY))||structuredClone(initial)}catch(e){datos={...initial,movimientos:[]}}
+function euros(n){return Number(n).toLocaleString("es-ES",{style:"currency",currency:"EUR"})}
+function guardar(){try{localStorage.setItem(KEY,JSON.stringify(datos))}catch(e){alert("No se pudieron guardar los datos. Exporta una copia de seguridad.")}mostrar()}
+function mostrar(){document.getElementById("saldo").textContent=euros(datos.saldo);document.getElementById("objetivoTexto").textContent=euros(datos.objetivo);document.getElementById("beneficio").textContent=euros(datos.beneficio);const lista=document.getElementById("historial");lista.replaceChildren();if(!datos.movimientos.length){lista.textContent="Todavía no hay movimientos.";return} [...datos.movimientos].reverse().forEach(m=>{const item=document.createElement("div");item.className="history";const title=document.createElement("strong");title.textContent=m.concepto;const detail=document.createElement("div");detail.className=m.tipo==="venta"?"positive":"negative";detail.textContent=(m.tipo==="venta"?"+":"−")+euros(m.cantidad);item.append(title,detail);lista.append(item)})}
+function registrar(tipo){const concepto=document.getElementById("concepto").value.trim(),cantidad=Number(document.getElementById("cantidad").value);if(!concepto||!Number.isFinite(cantidad)||cantidad<=0){alert("Escribe un concepto y una cantidad válida.");return}if(tipo==="compra"&&cantidad>datos.saldo){alert("La compra supera el saldo registrado.");return}datos.saldo+=tipo==="venta"?cantidad:-cantidad;datos.beneficio+=tipo==="venta"?cantidad:-cantidad;datos.movimientos.push({concepto,cantidad,tipo,fecha:new Date().toISOString()});document.getElementById("concepto").value="";document.getElementById("cantidad").value="";guardar()}
+document.getElementById("ventaBtn").onclick=()=>registrar("venta");document.getElementById("compraBtn").onclick=()=>registrar("compra");
+document.getElementById("guardarObjetivo").onclick=()=>{const v=document.getElementById("objetivoInput").value;if(v.trim()===""||!Number.isFinite(Number(v))||Number(v)<0){alert("Introduce un objetivo válido.");return}datos.objetivo=Number(v);guardar()};
+document.getElementById("borrarBtn").onclick=()=>{if(confirm("¿Seguro que quieres reiniciar el saldo y borrar el historial?")){datos={saldo:0,objetivo:50,beneficio:0,movimientos:[]};guardar()}};
+document.getElementById("exportarBtn").onclick=()=>{const blob=new Blob([JSON.stringify(datos,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="JVZZ_CONTROL_copia.json";a.click();URL.revokeObjectURL(url)};
+document.getElementById("importarInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(typeof x.saldo!=="number"||!Array.isArray(x.movimientos))throw Error();datos=x;guardar();alert("Copia restaurada.")}catch(err){alert("Ese archivo no parece una copia válida.")}};r.readAsText(f)};
+function aplicarFotoGuardada(){try{const f=localStorage.getItem(PHOTO);if(f)document.body.style.backgroundImage=`linear-gradient(rgba(0,0,0,.60),rgba(0,0,0,.82)),url("${f}")`}catch(e){}}
+document.getElementById("aplicarFoto").onclick=()=>{const f=document.getElementById("fotoInput").files[0];if(!f){alert("Primero selecciona una foto.");return}if(!f.type.startsWith("image/")){alert("Selecciona una imagen.");return}const r=new FileReader();r.onload=()=>{document.body.style.backgroundImage=`linear-gradient(rgba(0,0,0,.60),rgba(0,0,0,.82)),url("${r.result}")`;try{localStorage.setItem(PHOTO,r.result)}catch(e){alert("La foto se aplicó, pero quizá no se guarde. Prueba una más pequeña.")}};r.readAsDataURL(f)};
+document.getElementById("quitarFoto").onclick=()=>{localStorage.removeItem(PHOTO);document.body.style.backgroundImage="none";document.body.style.backgroundColor="#000";document.getElementById("fotoInput").value=""};
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+aplicarFotoGuardada();mostrar();
+</script>
+</body></html>
